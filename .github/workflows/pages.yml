@@ -13,19 +13,33 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+  
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v6.0.1
+  
+      - name: Build recipe site with Zola
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/getzola/zola:v0.22.0"
+          echo "Using image: $image"
+  
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            -w "/workspace/recipes" \
+            "$image" build --output-dir "/workspace/public"
 
-      - name: Build Zola + upload Pages artifact
-        uses: getzola/github-pages@066755243e69f508fd1a74739fbf1a65f656c790
+          mv /workspace/rcd /workspace/public/rcd
+  
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
-          zola_version: v0.22.0
-          working_directory: ./recipes
-          output_dir: public
+          path: "/workspace/public"
           
   deploy:
     runs-on: ubuntu-latest
