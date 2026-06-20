@@ -1,0 +1,73 @@
+.drop-button {
+    background-color: lightgray;
+    padding: 10px;
+    cursor: pointer;
+    width: 100px;
+    border: 0;
+    display: block;
+}
+
+.drop {
+    display: inline-block;
+    position: relative;
+    margin: 0 3px;
+}
+
+.drop-content {
+    min-width: 100%;
+    display: none;
+    position: absolute;
+    background-color: #eeeeee;
+    z-index: 1;
+}
+
+.drop.up .drop-content {
+    bottom: 0;
+}
+
+.drop-content a {
+    color: black;
+    padding: 5px;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+}
+
+.drop-content .drop-button {
+    background-color: transparent;
+    width: 100%;
+    margin: 0;
+    padding: 5px;
+
+}
+
+.drop-content .drop {
+    margin: 0;
+    display: block;
+}
+
+.drop-content .drop-content {
+    left: 100%;
+    top: 0;
+    width: inherit;
+}
+
+.drop:hover > .drop-content {
+    display: block;
+}
+
+.drop:hover > .drop-button {
+    background-color: gray;
+}
+
+.drop-content a:hover, .drop-content .drop-button:hover, .drop-content .drop:hover > .drop-button {
+    background-color: lightgray;
+}
+
+@media (max-device-width: 520px) {
+    .drop-button, .drop-content .drop-button, .drop-content a {width: 200px; padding: 30px;}
+}
+
+@media print {
+    .drop, .drop * {display: none !important;}
+}

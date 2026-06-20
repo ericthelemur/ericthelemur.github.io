@@ -1,0 +1,29 @@
+{% macro serves_input(val) %}
+<input type="number" placeholder="{{ val | safe }}" value="{{ val | safe }}" min="1" name="servingsNumb"
+    id="servingsNumb" class="no-print" style="width: 50px;" onchange="refreshQuantities()">
+<p id="print-quantities" class="only-print">{{ val | safe }}</p>
+{% endmacro %}
+
+{% macro serves_insert(quant_str) %}
+{% set val = quant_str | regex_replace(pattern=`.*\[(\d+)\].*`, rep=`$1`) %}
+{% set inp = serves::serves_input(val=val) %}
+{{ quant_str | regex_replace(pattern=`\[(\d+)\]`, rep=inp) | safe }}
+{% endmacro %}
+
+
+{% macro serves_wrapper(quant_str, title) %}
+{{ title | safe }}:
+{% if quant_str is matching(`^\d+$`) %}
+{{ serves::serves_input(val=quant_str) }}
+{% else %}
+{{ serves::serves_insert(quant_str=quant_str) }}
+{% endif %}
+{% endmacro %}
+
+{% macro serves(page) %}
+{% if page.extra.serves %}
+{{ serves::serves_wrapper(quant_str=page.extra.serves, title="Serves") }}
+{% elif page.extra.makes %}
+{{ serves::serves_wrapper(quant_str=page.extra.makes, title="Makes") }}
+{% endif %}
+{% endmacro %}

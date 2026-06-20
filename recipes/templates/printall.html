@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import "macros/recipe.html" as recipe %}
+{% import "macros/parts.html" as parts %}
+
+{% macro printsec(section) %}
+{% for path in section.subsections %}
+{% set s = get_section(path=path, include_pages=true) %}
+{{ self::printsec(section=s) }}
+{% endfor %}
+{% for child in section.pages %}
+{{ recipe::recipe(page=child) }}
+{% endfor %}
+{% endmacro %}
+
+{% block header %}
+{{ super() }}
+<style>
+    #method-section {
+        page-break-after: always;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set index = get_section(path='_index.md') %}
+
+{% for path in index.subsections %}
+{% set s = get_section(path=path, include_pages=true) %}
+{{ self::printsec(section=s) }}
+{% endfor %}
+
+{% endblock content %}
+
+{% block post %}
+<script>
+    document.body.innerHTML = findAndReplaceNumbs(document.body.innerHTML, 1);
+    window.print();
+</script>
+{% endblock post %}
+
+</html>

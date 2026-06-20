@@ -1,0 +1,32 @@
+{% import "macros/parts.html" as parts %}
+{% import "macros/serves.html" as serves %}
+
+{% macro recipe(page) %}
+<div class="recipe">
+    <div id="title-section">
+        <p id="path">{{ parts::bbreadcrumb() }}</p>
+        <h1 id="title">{{ page.title }}</h1>
+        <table style="width: 100%;" id="infotable">
+            <tbody>
+                <tr>
+                    <td>{{ serves::serves(page=page) }}</td>
+                    <td>Prep Time: {{ page.extra.prep | default(value="-")}}</td>
+                </tr>
+                <tr>
+                    <td>Carbs: {{ page.extra.carbs | default(value="-") }}</td>
+                    <td>Cook Time: {{ page.extra.cook | default(value="-") }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <br>
+    <div id="ingredients-section">
+        <h2>Ingredients:</h2>
+        {{ page.extra.ingredients | markdown() | safe }}
+    </div>
+    <div id="method-section">
+        <h2>Method:</h2>
+        <ol>{{ page.content | safe }}</ol>
+    </div>
+</div>
+{% endmacro %}

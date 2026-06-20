@@ -1,0 +1,126 @@
+body {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 12px;
+}
+
+h1 {
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 28px;
+    text-align: center;
+}
+
+h2 {
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 14px;
+    font-variant: small-caps;
+    margin-bottom: 0;
+}
+
+h3 {
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 12px;
+    margin-bottom: 0;
+    margin-top: 3px;
+}
+
+p, li, td, a {
+    font-family: "Segoe UI", sans-serif;
+}
+
+td {
+    text-align: center;
+    font-weight: bold;
+    width: 50%;
+}
+
+td p {
+    margin: 0;
+}
+
+
+#title-section ul, #ingredients-section ul {
+    list-style-type: none;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 10px;
+}
+
+#title-section p {
+    text-align: right;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+#title-section h1 {
+    margin-top: 10px;
+}
+
+ol {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 20px;
+}
+
+#container {
+    width: 500px;
+    margin: auto;
+}
+
+
+#ingredients-section {
+    float: left;
+    width: 30%;
+}
+
+#method-section {
+    display: inline-block;
+    width: 68%;
+    padding-left: 1%;
+}
+
+#method-section li {
+    padding-bottom: 12px;
+}
+
+a.button {
+    color: black;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+
+    background-color: lightgray;
+    padding: 10px 15px;
+    border: 0;
+    margin: 0 3px;
+}
+
+a.button:hover {
+    background-color: grey;
+}
+
+@media print, (max-device-width: 520px) {
+    #container {width:100%}
+    h1 {font-size: 5.6vw}
+    h2 {font-size: 2.8vw}
+    h3 {font-size: 2.2vw}
+    p, li, td, a, input {font-size: 2.2vw}
+    ul {padding-left: 2vw}
+    ol {padding-left: 4vw}
+    a.button {padding: 30px}
+}
+
+.only-print {display: none;}
+
+@media print {
+    #print-buttons {display: none;}
+    .no-print {display: none;}
+    .only-print {display: inline;}  
+    a {text-decoration: none; color: inherit}
+}
+
+/*@media only screen and (max-device-width: 355px) {
+    #container, #ingredients-section, #method-section {width: 100%;}
+    #ingredients-section {float: none;}
+    #method-section {display: initial;}
+    #ingredients-section li {display: inline-block; padding: 0 5%;}
+}*/

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "macros/parts.html" as parts %}
+
+{% macro fpsec(section) %}
+<ul>
+    {% for path in section.subsections %}
+    {% set s = get_section(path=path, include_pages=true) %}
+    <li>{{s.title}}{{ self::fpsec(section=s) }}</li>
+    {% endfor %}
+    {% for child in section.pages %}
+    <li><a href='{{ child.permalink }}'>{{ child.title }}</a></li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+
+{% block content %}
+<nav id="dropdown-nav" class="no-print">
+    <a class="button" href="{{ get_url(path='@/_index.md') }}">&#127968; Home</a>
+    {{ parts::navbar() }}
+</nav>
+<p id="path">{{ parts::bbreadcrumb() }}</p>
+
+<h1>All {{section.title}} Recipes</h1>
+{{ self::fpsec(section=section) }}
+
+<div id="print-buttons" style="float: right">
+    <a class='button' href="{{ get_url(path='admin/index.html') }}">Edit</a>
+    <a class='button recipeLink' href="{{ get_url(path='@/printall.md') }}">Print All</a>
+</div>
+</div>
+{% endblock %}
+
+</html>

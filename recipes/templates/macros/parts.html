@@ -1,0 +1,45 @@
+{% macro bbreadcrumb() %}
+{% if section %}
+{% set page = section %}
+{% endif %}
+
+<!-- Don't trigger on top level -->
+{% if page.ancestors | length > 1 %}
+<p id="path">
+    {% for parent in page.ancestors %}
+    {% if not loop.first %} <!-- Ignore first -->
+    {% set s = get_section(path=parent, include_pages=false) %}
+    <a href="{{ s.permalink }}">{{ s.title | truncate(length=25) }}</a> /
+    {% endif %}
+    {% endfor %}
+    <!-- Include actual page -->
+    {{ page.title | truncate(length=25)}}
+</p>
+{% endif %}
+{% endmacro bbreadcrumb %}
+
+
+
+{% macro ddsec(section) %}
+<div class="drop">
+    <a class="drop-button">{{ section.title }} ></a>
+    <div class="drop-content">
+        {% for path in section.subsections %}
+        {% set s = get_section(path=path, include_pages=true) %}
+        {{ parts::ddsec(section=s) }}
+        {% endfor %}
+        {% for child in section.pages %}
+        <a class='recipeLink' href='{{ get_url(path=child.path) }}'>{{ child.title }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro navbar() %}
+{% set index = get_section(path='_index.md') %}
+
+{% for path in index.subsections %}
+{% set s = get_section(path=path, include_pages=true) %}
+{{ parts::ddsec(section=s) }}
+{% endfor %}
+{% endmacro %}
