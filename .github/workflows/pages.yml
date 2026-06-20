@@ -35,6 +35,7 @@ jobs:
             "$image" build --output-dir "/workspace/public"
 
           cd ${{ github.workspace }}
+          ls -al
           cp -r ./rcd ./public/rcd
   
       - name: Upload GitHub Pages artifact
