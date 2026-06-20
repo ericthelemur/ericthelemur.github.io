@@ -1,4 +1,4 @@
-name: Build and deploy Zola website
+name: Build Website
 on:
   push:
     branches:
@@ -22,7 +22,17 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6.0.1
   
-      - name: Build recipe site with Zola
+      - name: Copy Raw Files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ${{ github.workspace }}
+          ls -al
+          mkdir ./public
+          cp -r ./rcd ./public/rcd
+          ls -al
+            
+      - name: Build Zola recipe site
         shell: bash
         run: |
           set -euo pipefail
@@ -32,11 +42,7 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}":/workspace \
             -w "/workspace/recipes" \
-            "$image" build --output-dir "/workspace/public"
-
-          cd ${{ github.workspace }}
-          ls -al
-          cp -r ./rcd ./public/rcd
+            "$image" build --output-dir "/workspace/public/recipes"
   
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
