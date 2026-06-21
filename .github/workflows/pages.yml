@@ -30,6 +30,7 @@ jobs:
           ls -al
           mkdir ./public
           cp -r ./rcd ./public/rcd
+          cp -r ./tree ./public/tree
           ls -al
             
       - name: Build Zola recipe site
