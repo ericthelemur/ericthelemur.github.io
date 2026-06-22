@@ -67,6 +67,7 @@
   <script>
     const { encrypt, decrypt } = createCrypto();
 
+    let panzoom = null;
     let pw = null;
     let svgEnc = null;
     fetch("./treeenc.svg").then(r => r.text()).then(t => { svgEnc = t; pw && loadSVG() });
@@ -97,8 +98,8 @@
       setTimeout(() => {
         // Load panzoom after repaint
         const elem = document.getElementById('svgWrapper');
-        const panzoom = Panzoom(elem, {
-          maxScale: 5,
+        panzoom = Panzoom(elem, {
+          maxScale: window.innerWidth > window.innerHeight ? 5 : 10,
           minScale: 1,
           contain: 'outside',
           cursor: 'grab'
