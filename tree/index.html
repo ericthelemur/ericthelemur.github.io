@@ -1,98 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>SVG Viewer with Panzoom</title>
-<link rel="preconnect" href="https://rsms.me/">
-<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: #f0f0f0;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Family Tree</title>
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #f0f0f0;
+      font-family: "Inter", sans-serif;
+    }
 
-  #viewport {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    touch-action: none; /* allow pinch gestures */
-    background: #ddd;
-  }
+    #viewport {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+      background: #ddd;
+    }
 
-  #svgWrapper {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+    #svgWrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      will-change: transform;
+    }
 
-  img {
-    width: 100%;
-    height: auto;
-    max-width: none;
-    max-height: none;
-    user-select: none;
-    pointer-events: none; /* Panzoom handles events */
-  }
-</style>
+    svg {
+      user-select: none;
+      pointer-events: none;
+    }
+
+    svg * {
+      text-rendering: optimizeLegibility;
+      shape-rendering: geometricPrecision;
+    }
+  </style>
 </head>
+
 <body>
 
-<div id="viewport">
-  <div id="svgWrapper">
-    <form id="login">
-	<div>
-	  <label for="pass">Password:</label>
-	  <input type="text" id="pass" name="password" required />
-	</div>
-	<input type="submit" value="Decrypt" />
+  <div id="viewport">
+    <div id="svgWrapper">
+      <form id="login">
+        <div>
+          <label for="pass">
+            Password:
+            <input type="password" id="pass" name="password" required />
+          </label>
+          <input type="submit" value="Decrypt" />
+          <br />
+          <p id="error" style="color: red; text-align: center;"></p>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
-<script src="./crypto.js"></script>
-<script>
-	const {encrypt, decrypt} = createCrypto();
+  <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
+  <script src="./crypto.js"></script>
+  <script>
+    const { encrypt, decrypt } = createCrypto();
 
-	let pw = null;
-	let svgEnc = null;
-	fetch("./treeenc.svg").then(r => r.text()).then(t => { svgEnc = t; pw && loadSVG() });
-	
-	document.getElementById("login").addEventListener("submit", (e) => {
-		e.preventDefault();
-		console.log(e);
-		pw = document.getElementById("pass").value;
-		svgEnc && loadSVG();
-	});
-	
-	async function loadSVG() {
-		console.log(svgEnc.slice(0, 100));
-		console.log(pw);
-		const decrypted = await decrypt(svgEnc, pw);
-		console.log(decrypted.slice(0, 100));
-		if (decrypted.startsWith("<svg ")) {
-			document.getElementById("svgWrapper").innerHTML = decrypted;
-		}
-	}
-</script>
+    let pw = null;
+    let svgEnc = null;
+    fetch("./treeenc.svg").then(r => r.text()).then(t => { svgEnc = t; pw && loadSVG() });
 
-<!-- Panzoom library -->
-<script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
+    document.getElementById("login").addEventListener("submit", (e) => {
+      e.preventDefault();
+      console.log(e);
+      pw = document.getElementById("pass").value;
+      svgEnc && loadSVG();
+    });
 
-<script>
-  const elem = document.getElementById('svgWrapper');
-  const panzoom = Panzoom(elem, {
-    maxScale: 10,
-    minScale: 1,
-    contain: 'outside',
-    cursor: 'grab'
-  });
+    function error(e) {
+      document.getElementById("error").innerText = e;
+      localStorage.removeItem("password");
+    }
 
-  // Enable wheel zoom
-  document.getElementById('viewport').addEventListener('wheel', panzoom.zoomWithWheel);
+    async function loadSVG() {
+      console.log(svgEnc.slice(0, 100));
+      console.log(pw);
+      const decrypted = await decrypt(svgEnc, pw).catch(() => error("Incorrect Password"));
+      console.log(decrypted.slice(0, 100));
+      if (!decrypted.startsWith("<svg ")) {
+        return error("Incorrect Password");
+      }
+      document.getElementById("svgWrapper").innerHTML = decrypted;
+      localStorage.setItem("password", pw);
 
-  // Enable pinch zoom + pan automatically (Panzoom handles pointer events)
-</script>
+      setTimeout(() => {
+        // Load panzoom after repaint
+        const elem = document.getElementById('svgWrapper');
+        const panzoom = Panzoom(elem, {
+          maxScale: 5,
+          minScale: 1,
+          contain: 'outside',
+          cursor: 'grab'
+        });
+
+        // Enable wheel zoom
+        document.getElementById('viewport').addEventListener('wheel', panzoom.zoomWithWheel);
+      }, 100);
+    }
+
+    const savedPW = localStorage.getItem("password");
+    if (savedPW) {
+      pw = savedPW;
+      loadSVG();
+    }
+  </script>
+
 
 </body>
