@@ -184,7 +184,6 @@
                 context.promise = myFetch(imageJob.src + ".enc", {
                     method: "GET",
                     mode: 'cors',
-                    cache: 'no-cache',
                     credentials: 'same-origin',
                     headers: imageJob.ajaxHeaders || {},
                     body: null

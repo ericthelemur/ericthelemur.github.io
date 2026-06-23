@@ -11,14 +11,37 @@ import urllib
 # -----------------------------
 # CONFIG
 # -----------------------------
-INPUT_IMAGE = "tree.png"          # your large diagram
+INPUT_IMAGE = "../../tree(2).png"          # your large diagram
 OUTPUT_DIR = ""
 DZI_NAME = "tree"
 PASSWORD = b"54FlyingFish"  # replace with real password
 
-TILE_SIZE = 254
+TILE_SIZE = 510
 OVERLAP = 1
 FORMAT = "png"
+
+# -----------------------------
+# GENERATE DZI + TILES
+# -----------------------------
+def generate_dzi():
+    tiles_dir = Path(OUTPUT_DIR) / f"{DZI_NAME}_files"
+    if os.path.exists(tiles_dir):
+        shutil.rmtree(tiles_dir)
+
+    creator = ImageCreator(
+        tile_size=TILE_SIZE,
+        tile_overlap=OVERLAP,
+        tile_format=FORMAT,
+        image_quality=0.9
+    )
+
+    Image.MAX_IMAGE_PIXELS = 10000000000
+    source = Image.open(INPUT_IMAGE)
+
+    creator.create(source, os.path.join(OUTPUT_DIR, DZI_NAME + ".dzi"))
+
+
+generate_dzi()
 
 # -----------------------------
 # KEY DERIVATION (PBKDF2)
@@ -47,28 +70,6 @@ def encrypt_bytes(data: bytes) -> bytes:
     ciphertext = aesgcm.encrypt(iv, data, None)
     return iv + ciphertext
 
-# -----------------------------
-# GENERATE DZI + TILES
-# -----------------------------
-def generate_dzi():
-    # if os.path.exists(OUTPUT_DIR):
-    #     shutil.rmtree(OUTPUT_DIR)
-    # os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    creator = ImageCreator(
-        tile_size=TILE_SIZE,
-        tile_overlap=OVERLAP,
-        tile_format=FORMAT,
-        image_quality=0.9
-    )
-
-    Image.MAX_IMAGE_PIXELS = 10000000000
-    source = Image.open(INPUT_IMAGE)
-
-    creator.create(source, os.path.join(OUTPUT_DIR, DZI_NAME + ".dzi"))
-
-
-generate_dzi()
 
 # -----------------------------
 # ENCRYPT DZI XML
