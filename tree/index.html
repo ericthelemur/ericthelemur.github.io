@@ -2,120 +2,247 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>Family Tree</title>
-  <link rel="preconnect" href="https://rsms.me/">
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #f0f0f0;
-      font-family: "Inter", sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Family Tree</title>
+    <script src="https://cdn.jsdelivr.net/npm/openseadragon@6.0.2/build/openseadragon/openseadragon.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #222;
+            color: white;
+            font-family: sans-serif;
+        }
 
-    #viewport {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      touch-action: none;
-      background: #ddd;
-    }
+        #viewer {
+            width: 100vw;
+            height: 100vh;
+        }
 
-    #svgWrapper {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      will-change: transform;
-    }
-
-    svg {
-      user-select: none;
-      pointer-events: none;
-    }
-
-    svg * {
-      text-rendering: optimizeLegibility;
-      shape-rendering: geometricPrecision;
-    }
-  </style>
+        #passwordBox {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
 </head>
 
 <body>
 
-  <div id="viewport">
-    <div id="svgWrapper">
-      <form id="login">
-        <div>
-          <label for="pass">
-            Password:
-            <input type="password" id="pass" name="password" required />
-          </label>
-          <input type="submit" value="Decrypt" />
-          <br />
-          <p id="error" style="color: red; text-align: center;"></p>
+    <div id="viewer">
+        <div id="passwordBox">
+            <form id="login">
+                <div>
+                    <label for="pass">
+                        Password:
+                        <input type="password" id="pass" name="password" required />
+                    </label>
+                    <input type="submit" value="Unlock" />
+                    <br />
+                    <p id="error" style="color: red; text-align: center;"></p>
+                </div>
+            </form>
         </div>
-      </form>
     </div>
-  </div>
 
-  <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
-  <script src="./crypto.js"></script>
-  <script>
-    const { encrypt, decrypt } = createCrypto();
+    <script>
+        let cryptoKey = null;
 
-    let panzoom = null;
-    let pw = null;
-    let svgEnc = null;
-    fetch("./treeenc.svg").then(r => r.text()).then(t => { svgEnc = t; pw && loadSVG() });
+        async function deriveKey(password) {
+            const enc = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey(
+                "raw",
+                enc.encode(password),
+                "PBKDF2",
+                false,
+                ["deriveKey"]
+            );
 
-    document.getElementById("login").addEventListener("submit", (e) => {
-      e.preventDefault();
-      console.log(e);
-      pw = document.getElementById("pass").value;
-      svgEnc && loadSVG();
-    });
+            return crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: enc.encode("dzi-encryption-salt"),
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["decrypt"]
+            );
+        }
 
-    function error(e) {
-      document.getElementById("error").innerText = e;
-      localStorage.removeItem("password");
-    }
+        async function decryptArrayBuffer(arrayBuffer) {
+            const iv = new Uint8Array(arrayBuffer.slice(0, 12));
+            const data = arrayBuffer.slice(12);
 
-    async function loadSVG() {
-      console.log(svgEnc.slice(0, 100));
-      console.log(pw);
-      const decrypted = await decrypt(svgEnc, pw).catch(() => error("Incorrect Password"));
-      console.log(decrypted.slice(0, 100));
-      if (!decrypted.startsWith("<svg ")) {
-        return error("Incorrect Password");
-      }
-      document.getElementById("svgWrapper").innerHTML = decrypted;
-      localStorage.setItem("password", pw);
+            return crypto.subtle.decrypt(
+                { name: "AES-GCM", iv },
+                cryptoKey,
+                data
+            );
+        }
 
-      setTimeout(() => {
-        // Load panzoom after repaint
-        const elem = document.getElementById('svgWrapper');
-        panzoom = Panzoom(elem, {
-          maxScale: window.innerWidth > window.innerHeight ? 5 : 10,
-          minScale: 1,
-          contain: 'outside',
-          cursor: 'grab'
+        // Decrypt DZI XML
+        async function loadDecryptedDzi(url) {
+            const res = await fetch(url);
+            const encBuf = await res.arrayBuffer();
+            const decBuf = await decryptArrayBuffer(encBuf);
+            const decText = new TextDecoder().decode(decBuf);
+            console.log(decText)
+            return decText;
+        }
+
+        // Convert DZI XML string to OpenSeadragon config
+        function parseDziXml(xmlString) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(xmlString, "application/xml");
+
+            const image = xml.getElementsByTagName("Image")[0];
+            const size = image.getElementsByTagName("Size")[0];
+
+            return {
+                Image: {
+                    xmlns: "http://schemas.microsoft.com/deepzoom/2008",
+                    Url: "tree_files/",          // base path for tiles
+                    Format: image.getAttribute("Format"),
+                    Overlap: parseInt(image.getAttribute("Overlap")),
+                    TileSize: parseInt(image.getAttribute("TileSize")),
+                    Size: {
+                        Width: parseInt(size.getAttribute("Width")),
+                        Height: parseInt(size.getAttribute("Height"))
+                    }
+                }
+            };
+        }
+
+
+        //see https://stackoverflow.com/questions/41996814/how-to-abort-a-fetch-request
+        //we need to provide the possibility to abort fetch(...)
+        function myFetch(input, init) {
+            let controller = new AbortController();
+            let signal = controller.signal;
+            init = Object.assign({ signal }, init);
+            let promise = fetch(input, init);
+            promise.controller = controller;
+            return promise;
+        }
+
+
+        // Decrypt tile using AES-GCM
+        async function decryptTile(arrayBuffer) {
+            const iv = new Uint8Array(arrayBuffer.slice(0, 12));      // first 12 bytes
+            const data = arrayBuffer.slice(12);                       // rest is ciphertext
+
+            const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv },
+                cryptoKey,
+                data
+            );
+
+            return new Blob([decrypted], { type: "image/png" });
+        }
+
+        OpenSeadragon.extend(OpenSeadragon.DziTileSource.prototype, {
+            getTilePostData: function (level, x, y) {
+                //here we exploit the POST API, a handy shortcut to pass ourselves
+                //an instance to the tile object
+                //return tile;
+                return { width: this.getTileWidth(), height: this.getTileHeight() };
+            },
+            getTileAjaxHeaders: function (level, x, y) {
+                // to avoid CORS problems
+                return {
+                    'Content-Type': 'application/octet-stream',
+                    'Access-Control-Allow-Origin': '*'
+                };
+            },
+            downloadTileStart: function (imageJob) {
+                // namespace where we attach our properties to avoid
+                // collision with API
+                let context = imageJob.userData;
+                context.image = new Image();
+
+                // in all scenarios, unless abort() is called, make
+                // sure imageJob.finish() gets executed!
+                context.image.onerror = context.image.onabort = function () {
+                    // as a fallback compatibility, you can provide error message
+                    // instead of type upon failure, or you can return custom data with custom type (e.g. canvas with context2d)
+                    imageJob.finish(null, context.promise, "Failed to parse tile data as an Image");
+                };
+                context.image.onload = function () {
+                    imageJob.finish(context.image, context.promise, "image");
+                };
+
+                // note we ignore some imageJob properties such as
+                // 'loadWithAjax'. This means preventing OSD from using
+                // ajax will have no effect as we force it to do so.
+                // Make sure you implement all the features the official
+                // implementation do if you want to keep them.
+                context.promise = myFetch(imageJob.src + ".enc", {
+                    method: "GET",
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    credentials: 'same-origin',
+                    headers: imageJob.ajaxHeaders || {},
+                    body: null
+                }).then(async (data) => {
+                    const encrypted = await data.arrayBuffer();
+                    const blob = await decryptTile(encrypted);
+
+                    context.image.src = URL.createObjectURL(blob);
+                });
+
+            },
+            downloadTileAbort: function (imageJob) {
+                //we can abort thanks to myFetch() implementation
+                imageJob.userData.promise.controller.abort();
+            }
         });
 
-        // Enable wheel zoom
-        document.getElementById('viewport').addEventListener('wheel', panzoom.zoomWithWheel);
-      }, 100);
-    }
+        async function unlock(pw) {
+            try {
+                const password = pw || document.getElementById("pass").value;
+                if (!password) throw "No Password";
+                console.log(password);
+                cryptoKey = await deriveKey(password);
 
-    const savedPW = localStorage.getItem("password");
-    if (savedPW) {
-      pw = savedPW;
-      loadSVG();
-    }
-  </script>
 
+                const dziXml = await loadDecryptedDzi("tree.dzi.enc");
+                if (!dziXml.startsWith("<?xml")) throw "Incorrect Password";
+                document.getElementById("viewer").innerHTML = "";
+
+                // Initialize OpenSeadragon
+                const viewer = OpenSeadragon({
+                    id: "viewer",
+                    prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
+                    tileSources: parseDziXml(dziXml),
+                    crossOriginPolicy: "Anonymous",
+                    loadTilesWithAjax: true,
+                    ajaxHeaders: {}
+                });
+
+                localStorage.setItem("password", password);
+            } catch (e) {
+                document.getElementById("error").innerText = `Incorrect Password\nError: ${e}`;
+                localStorage.removeItem("password");
+            }
+        }
+
+        document.getElementById("login").addEventListener("submit", (e) => {
+            e.preventDefault(); 
+            console.log(e); 
+            unlock(null);
+        });
+        
+        const savedPW = localStorage.getItem("password");
+        if (savedPW) {
+            unlock(savedPW);
+        }
+    </script>
 
 </body>
+
+</html>
